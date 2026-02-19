@@ -1,3 +1,10 @@
+Part,Interface Name,Purpose
+Storage,IdentityStore,"Decouples the database (SQLite, Postgres)."
+Audit,AuditLogger,"Decouples the logging (File, Cloud, Terminal)."
+Limiter,RateLimiter,"Decouples the blocking logic (In-memory, Redis)."
+Messaging,Notifier,"Decouples email/SMS (Twilio, SendGrid, Print)."
+Security,Hasher,"Decouples the math (Argon2, Bcrypt, Mock)."
+
 Rate Limiting: A built-in way to prevent brute-force attacks on the SignIn function.
 
 MFA Hooks: Interfaces to plug in TOTP (Google Authenticator) later.
