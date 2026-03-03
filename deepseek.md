@@ -1,4 +1,4 @@
-## 🏠 `index.md` — Landing
+`index.md` — Landing
 Purpose:
 * 10-second understanding
 * Install snippet
@@ -6,8 +6,8 @@ Purpose:
 * Key differentiators
 
 Keep it minimal.
----
-## 📜 `philosophy.md`
+
+`philosophy.md`
 Purpose:
 * Why this exists
 * Anti lock-in stance
@@ -16,8 +16,7 @@ Purpose:
 * Core vs platform
 
 This is emotional + architectural positioning.
----
-## 🏗 `architecture.md`
+`architecture.md`
 Purpose:
 * Diagrams
 * Flow of login
@@ -26,13 +25,12 @@ Purpose:
 * Request lifecycle
 
 This is technical authority.
----
-## 🧠 `design-decisions.md`
+
+`design-decisions.md`
 This is where maturity shows.
-Structure it like this:
---- 
-# Design Decisions
-## Why No OAuth (Yet)
+Structure it like this: 
+Design Decisions
+Why No OAuth (Yet)
 Explain:
 * OAuth is a protocol layer
 * Core authentication comes first
@@ -41,7 +39,7 @@ Explain:
 * Keep core minimal
 
 Position it as intentional minimalism — not missing feature.
-## Why Interfaces Over Generics
+Why Interfaces Over Generics
 Explain:
 * Interfaces define behavior contracts
 * Clear extension points
@@ -50,7 +48,7 @@ Explain:
 * Interfaces keep infrastructure swappable
 
 This shows architectural depth.
-## Why No Built-In Database
+Why No Built-In Database
 Explain:
 * Database choice is architectural
 * Different apps need different persistence
@@ -59,7 +57,7 @@ Explain:
 * Storage is a pluggable concern
 
 This reinforces infra-agnostic identity.
-## Why No Hosted Mode
+Why No Hosted Mode
 Explain:
 * This is a library, not a platform
 * No control plane
@@ -68,8 +66,7 @@ Explain:
 * Fully self-contained
 
 That’s your anti-SaaS clarity.
----
-## 📘 `getting-started.md`
+`getting-started.md`
 Goal:
 Someone copies this and has working auth in 60 seconds.
 Must include:
@@ -78,24 +75,23 @@ Must include:
 * Minimal example
 * Test example
 
----
-## 📂 `guide/`
+`guide/`
 This is operational documentation.
-### installation.md
+installation.md
 Go install, versioning, go.mod details.
-### quick-start.md
+quick-start.md
 Minimal working setup.
-### configuration.md
+configuration.md
 Explain:
 * Required config
 * Optional config
 * Default behavior
-### middleware.md
+middleware.md
 Explain:
 * net/http
 * future framework adapters
 * custom middleware usage
-### testing.md
+testing.md
 This is huge for you.
 Show:
 * In-memory storage
@@ -104,8 +100,7 @@ Show:
 * CI usage
 
 This is one of your strongest differentiators.
----
-## 🔌 `adapters/`
+`adapters/`
 Document the philosophy of pluggability.
 Each page explains:
 * Interface definition
@@ -114,8 +109,7 @@ Each page explains:
 * Production considerations
 
 This reinforces your architecture identity.
----
-## 📖 `api/`
+`api/`
 Pure reference.
 No philosophy.
 No explanation.
@@ -126,8 +120,7 @@ Just:
 * Token types
 
 Engineers love clear reference docs.
----
-## 🧪 `examples/`
+`examples/`
 Each example:
 * Full working code
 * Minimal explanation
