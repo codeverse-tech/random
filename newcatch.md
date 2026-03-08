@@ -33,3 +33,9 @@ password reset flows
 account lockouts
 
 Auth systems grow very complex.
+
+full roadmap:
+v1.0.0(Now)
+v1.1.0 CLI tool + device tracking
+v1.2.0 gRPC API + webhooks 
+v1.3.0 MFA + magic links
