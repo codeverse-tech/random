@@ -1,0 +1,269 @@
+## NOTE FOR UI DESIGNER
+
+### Screens to Design (8 total)
+
+**1. Landing Page**
+- Hero section with platform name
+- Show 3 courses (title, instructor)
+- Sign up / Login buttons
+
+**2. Login / Signup**
+- Email + password fields
+- "Sign in with Google" button
+- Forgot password link
+
+**3. Student Dashboard**
+- Stats at top (courses enrolled, completed, certificates)
+- Continue Learning section (courses in progress)
+- My Courses section (all enrolled with progress bars)
+- Recent Activity list (last completed lessons)
+- My Certificates section (download buttons)
+
+**4. Course Page**
+- Course title, description, instructor
+- Modules (collapsible)
+- Lessons list inside each module
+- Enroll button (if not enrolled)
+- Progress bar (if enrolled)
+
+**5. Lesson Page**
+- YouTube video player at top
+- Lesson title
+- Left sidebar for lesson navigation
+- "Mark Complete" button
+- "Next Lesson" button
+- Quiz tab below video
+
+**6. Quiz Page**
+- Question text
+- 4 multiple choice options (radio buttons)
+- Submit button
+- Score display after submit
+- "Try Again" button if failed
+- "Next Lesson" button if passed
+
+**7. Profile Page**
+- Name and email display
+- Edit profile button
+- Notification preferences toggles
+- Delete account button (red, with confirmation)
+- List of earned certificates
+
+**8. Admin Dashboard**
+- Sidebar menu (Courses, Users, Analytics)
+- Course list with edit/delete buttons
+- Add course form (title, description, instructor)
+- Module/lesson management
+- User list with ban/unban buttons
+- Analytics charts (enrollments, completions)
+
+### Design Rules
+- Primary color: Purple (#667eea)
+- Use cards for courses and lessons
+- Progress bars: Show percentage
+- Mobile responsive
+- Clean, minimal, no animations
+
+---
+
+## NOTE FOR FRONTEND DEVELOPER
+
+### Authentication
+
+```javascript
+// Sign up
+await supabase.auth.signUp({ email, password })
+
+// Sign in
+await supabase.auth.signInWithPassword({ email, password })
+
+// Google sign in
+await supabase.auth.signInWithOAuth({ provider: 'google' })
+
+// Sign out
+await supabase.auth.signOut()
+
+// Get current user
+const { data: { user } } = await supabase.auth.getUser()
+```
+
+### Student APIs
+
+```javascript
+// Get dashboard stats
+const { data } = await supabase
+  .rpc('get_student_dashboard_stats', { user_uuid: user.id })
+
+// Get my courses with progress
+const { data } = await supabase
+  .rpc('get_my_courses', { user_uuid: user.id })
+
+// Get recent activity
+const { data } = await supabase
+  .rpc('get_recent_activity', { 
+    user_uuid: user.id, 
+    limit_count: 10 
+  })
+
+// Mark lesson complete
+await supabase
+  .from('progress')
+  .insert({ user_id: user.id, lesson_id: 5, completed: true })
+
+// Get notifications
+const { data } = await supabase
+  .rpc('get_my_notifications', { p_limit: 20 })
+
+// Mark notification read
+await supabase
+  .rpc('mark_notification_read', { p_notification_id: 123 })
+
+// Delete my account
+await supabase.rpc('delete_my_account')
+```
+
+### Admin APIs
+
+```javascript
+// Check if current user is admin
+const { data: isAdmin } = await supabase.rpc('is_admin')
+
+// Get all users (admin only)
+const { data } = await supabase
+  .from('users')
+  .select('*')
+  .order('created_at', { ascending: false })
+
+// Ban user
+await supabase.rpc('ban_user', { 
+  target_user_id: 'uuid-here', 
+  reason: 'spam' 
+})
+
+// Unban user
+await supabase.rpc('unban_user', { target_user_id: 'uuid-here' })
+
+// Create course
+await supabase
+  .from('courses')
+  .insert({ title, description, instructor })
+
+// Update course
+await supabase
+  .from('courses')
+  .update({ title })
+  .eq('id', courseId)
+
+// Delete course
+await supabase
+  .from('courses')
+  .delete()
+  .eq('id', courseId)
+
+// Add module
+await supabase
+  .from('modules')
+  .insert({ course_id, title, order })
+
+// Add lesson
+await supabase
+  .from('lessons')
+  .insert({ module_id, title, youtube_video_id, order })
+
+// Add quiz
+await supabase
+  .from('quizzes')
+  .insert({ lesson_id, question, options, correct_answer })
+```
+
+### Public APIs (no login needed)
+
+```javascript
+// Get all courses
+const { data } = await supabase
+  .from('courses')
+  .select('*, modules:modules(*, lessons:lessons(*))')
+
+// Get single course
+const { data } = await supabase
+  .from('courses')
+  .select('*, modules:modules(*, lessons:lessons(*))')
+  .eq('id', courseId)
+  .single()
+```
+
+### YouTube Integration
+
+```javascript
+// Embed YouTube video
+<iframe
+  src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1`}
+  title={lessonTitle}
+  frameBorder="0"
+  allowFullScreen
+/>
+
+// Extract video ID from URL
+function getYouTubeId(url) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+  const match = url.match(regExp)
+  return match && match[2].length === 11 ? match[2] : null
+}
+```
+
+### Tables Reference
+
+| Table | Used for |
+|-------|----------|
+| users | Profiles, roles |
+| courses | Course catalog |
+| modules | Course sections |
+| lessons | Individual videos |
+| enrollments | Which user enrolled which course |
+| progress | Completed lessons |
+| quizzes | Questions and answers |
+| quiz_attempts | User quiz submissions |
+| certificates | Earned certificates |
+| notifications | User alerts |
+
+### Important Rules
+
+1. **Never trust client-side role checks** - RLS enforces on database
+2. **Always check `is_admin()`** before showing admin UI
+3. **Banned users** - Check `is_banned` on every page load
+4. **Progress auto-saves** when lesson marked complete
+5. **Certificate auto-generates** when course 100% complete
+6. **YouTube videos** - Use `?rel=0&modestbranding=1` parameters
+
+### Environment Variables
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://uaytnmoxwlxyujgzhald.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Test Accounts
+
+| Email | Password | Role |
+|-------|----------|------|
+| raymondnicholasproguy@gmail.com | (your password) | Admin |
+| alice@test.com | Test123456 | Student |
+| bob@test.com | Test123456 | Student |
+| carol@test.com | Test123456 | Student |
+
+### Build Order (Recommended)
+
+1. Landing page + Auth (login/signup)
+2. Course catalog
+3. Lesson player + YouTube
+4. Progress tracking
+5. Student dashboard
+6. Quiz system
+7. Certificates
+8. Admin dashboard
+9. Notifications
+10. Profile + delete account
+
+---
+
+**Backend is 100% ready. Start building.**
