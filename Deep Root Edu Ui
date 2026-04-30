@@ -1,0 +1,729 @@
+# 📚 DEEP ROOT EDUCATION LMS - COMPLETE API DOCUMENTATION
+
+## For Frontend Developers
+
+---
+
+## 🔐 AUTHENTICATION
+
+### Email/Password Sign Up
+
+```javascript
+const { data, error } = await supabase.auth.signUp({
+  email: 'student@school.com',
+  password: 'password123',
+  options: {
+    data: {
+      full_name: 'John Student',
+      role: 'student'  // student, teacher, admin, parent
+    }
+  }
+});
+```
+
+### Google Sign In
+
+```javascript
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: {
+    redirectTo: 'https://yourapp.com/callback',
+    queryParams: {
+      access_type: 'offline',
+      prompt: 'consent',
+    }
+  }
+});
+```
+
+### Sign In
+
+```javascript
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@school.com',
+  password: 'password123'
+});
+```
+
+### Sign Out
+
+```javascript
+const { error } = await supabase.auth.signOut();
+```
+
+### Get Current User
+
+```javascript
+const { data: { user } } = await supabase.auth.getUser();
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('user_id', user.id)
+  .single();
+```
+
+---
+
+## 👤 PROFILES
+
+### Get My Profile
+
+```javascript
+const { data } = await supabase.rpc('get_my_profile');
+```
+
+### Update My Profile
+
+```javascript
+const { error } = await supabase
+  .from('profiles')
+  .update({ 
+    phone: '08012345678',
+    avatar_url: 'https://...'
+  })
+  .eq('user_id', user.id);
+```
+
+### Upload Avatar
+
+```javascript
+const file = event.target.files[0];
+const { data, error } = await supabase.storage
+  .from('profile_avatars')
+  .upload(`${userId}/${file.name}`, file);
+
+// Get public URL
+const { data: url } = supabase.storage
+  .from('profile_avatars')
+  .getPublicUrl(`${userId}/${file.name}`);
+```
+
+---
+
+## 🏫 SCHOOLS
+
+### Get My School
+
+```javascript
+const { data } = await supabase
+  .from('schools')
+  .select('*')
+  .single();
+```
+
+### Get All Schools (Admin only)
+
+```javascript
+const { data } = await supabase
+  .from('schools')
+  .select('*');
+```
+
+---
+
+## 📚 CLASSES
+
+### Get My Classes (Student/Teacher)
+
+```javascript
+// For teachers
+const { data } = await supabase.rpc('get_my_classes');
+
+// For students
+const { data } = await supabase
+  .from('classes')
+  .select('*, class_enrollments!inner(*)')
+  .eq('class_enrollments.student_id', profileId);
+```
+
+### Get Students in a Class (Teacher)
+
+```javascript
+const { data } = await supabase.rpc('get_class_students', {
+  class_id_param: 'class-uuid-here'
+});
+```
+
+### Create Class (Admin)
+
+```javascript
+const { data } = await supabase
+  .from('classes')
+  .insert({
+    school_id: schoolId,
+    name: 'JSS 3A',
+    class_code: 'JSS3A-001',
+    join_code: 'ABC123'  // for students to join
+  });
+```
+
+### Join Class with Code (Student)
+
+```javascript
+const { data } = await supabase.rpc('student_join_class', {
+  join_code_param: 'ABC123'
+});
+```
+
+### Bulk Enroll Students (Admin)
+
+```javascript
+const { data } = await supabase.rpc('admin_bulk_enroll_students', {
+  class_code_param: 'JSS3A-001',
+  student_emails: ['student1@email.com', 'student2@email.com']
+});
+```
+
+---
+
+## 📝 ASSIGNMENTS
+
+### Get Assignments for My Class
+
+```javascript
+const { data } = await supabase
+  .from('assignments')
+  .select('*, class:classes(name)')
+  .eq('class_id', classId)
+  .order('due_date', { ascending: true });
+```
+
+### Create Assignment (Teacher)
+
+```javascript
+const { data } = await supabase
+  .from('assignments')
+  .insert({
+    class_id: classId,
+    title: 'Algebra Quiz 1',
+    instructions: 'Solve the 10 equations',
+    due_date: '2025-12-01T23:59:59Z',
+    total_points: 50
+  });
+```
+
+### Get Assignment Details
+
+```javascript
+const { data } = await supabase
+  .from('assignments')
+  .select('*, submissions(*)')
+  .eq('id', assignmentId)
+  .single();
+```
+
+---
+
+## 📤 SUBMISSIONS
+
+### Submit Assignment (Student)
+
+```javascript
+// Text submission
+const { data } = await supabase
+  .from('submissions')
+  .insert({
+    assignment_id: assignmentId,
+    submission_text: 'My answers here...'
+  });
+
+// File submission
+const file = event.target.files[0];
+const { data: upload } = await supabase.storage
+  .from('assignment_submissions')
+  .upload(`${studentId}/${assignmentId}/${file.name}`, file);
+
+const { data } = await supabase
+  .from('submissions')
+  .insert({
+    assignment_id: assignmentId,
+    submission_file_url: upload.path
+  });
+```
+
+### Grade Submission (Teacher)
+
+```javascript
+const { data } = await supabase
+  .from('submissions')
+  .update({
+    grade: 85,
+    feedback: 'Great work!'
+  })
+  .eq('id', submissionId);
+```
+
+### Get Submission Rate (Teacher)
+
+```javascript
+const { data } = await supabase
+  .from('assignment_submission_rates')
+  .select('*')
+  .eq('assignment_id', assignmentId);
+```
+
+---
+
+## ✅ GRADES
+
+### Enter Grades (Teacher)
+
+```javascript
+const { data } = await supabase
+  .from('grades')
+  .insert({
+    student_id: studentId,
+    class_id: classId,
+    subject: 'Mathematics',
+    term: 'first',
+    score: 85,
+    grade_letter: 'B'
+  });
+```
+
+### Get Student Grades (Student/Parent)
+
+```javascript
+const { data } = await supabase
+  .from('grades')
+  .select('*, class:classes(name)')
+  .eq('student_id', studentId);
+```
+
+### Get Grade Distribution Chart
+
+```javascript
+const { data } = await supabase.rpc('get_grade_distribution', {
+  class_id_param: classId,
+  subject_param: 'Mathematics'
+});
+```
+
+---
+
+## 📊 ATTENDANCE
+
+### Mark Attendance (Teacher)
+
+```javascript
+// Mark single student
+const { data } = await supabase
+  .from('attendance')
+  .insert({
+    class_id: classId,
+    student_id: studentId,
+    status: 'present', // present, absent, late, excused
+    marked_by: teacherProfileId
+  });
+
+// Mark multiple students
+const attendanceRecords = students.map(student => ({
+  class_id: classId,
+  student_id: student.id,
+  status: student.status,
+  marked_by: teacherProfileId
+}));
+
+const { data } = await supabase
+  .from('attendance')
+  .upsert(attendanceRecords);
+```
+
+### Get Attendance Chart Data
+
+```javascript
+const { data } = await supabase.rpc('get_attendance_chart_data', {
+  class_id_param: classId
+});
+// Returns: [{ date, present_count, absent_count, late_count, attendance_rate }]
+```
+
+### Get Student Attendance Rate
+
+```javascript
+const { data } = await supabase
+  .from('attendance')
+  .select('status')
+  .eq('student_id', studentId)
+  .then(result => {
+    const total = result.data.length;
+    const present = result.data.filter(a => a.status === 'present').length;
+    return { rate: (present / total) * 100 };
+  });
+```
+
+---
+
+## 📄 MATERIALS (Lesson Notes)
+
+### Upload Material (Teacher)
+
+```javascript
+// With file upload
+const file = event.target.files[0];
+const { data: upload } = await supabase.storage
+  .from('lesson_materials')
+  .upload(`${classId}/${file.name}`, file);
+
+const { data } = await supabase
+  .from('materials')
+  .insert({
+    class_id: classId,
+    title: 'Algebra Chapter 1',
+    description: 'Introduction to Algebra',
+    file_url: upload.path,
+    material_type: 'pdf'
+  });
+
+// With external link (Google Drive)
+const { data } = await supabase
+  .from('materials')
+  .insert({
+    class_id: classId,
+    title: 'Algebra Video',
+    external_url: 'https://drive.google.com/...',
+    material_type: 'video'
+  });
+```
+
+### Get Class Materials (Student)
+
+```javascript
+const { data } = await supabase
+  .from('materials')
+  .select('*')
+  .eq('class_id', classId)
+  .order('created_at', { ascending: false });
+```
+
+---
+
+## 📢 ANNOUNCEMENTS
+
+### Post Announcement (Teacher/Admin)
+
+```javascript
+// Class-specific
+const { data } = await supabase
+  .from('announcements')
+  .insert({
+    school_id: schoolId,
+    class_id: classId,
+    title: 'Test Tomorrow',
+    content: 'Test on Chapter 1-3 tomorrow',
+    posted_by: profileId
+  });
+
+// School-wide (class_id = null)
+const { data } = await supabase
+  .from('announcements')
+  .insert({
+    school_id: schoolId,
+    class_id: null,
+    title: 'School Holiday',
+    content: 'School closed on Monday',
+    posted_by: profileId
+  });
+```
+
+### Get Announcements
+
+```javascript
+const { data } = await supabase
+  .from('announcements')
+  .select('*, profiles(full_name)')
+  .or(`class_id.eq.${classId},class_id.is.null`)
+  .order('created_at', { ascending: false });
+```
+
+---
+
+## 🔔 NOTIFICATIONS
+
+### Get My Notifications
+
+```javascript
+// Paginated
+const { data } = await supabase.rpc('get_my_notifications', {
+  page: 1,
+  per_page: 20,
+  unread_only: false
+});
+
+// Get unread count
+const { data: count } = await supabase.rpc('get_unread_notification_count');
+```
+
+### Mark as Read
+
+```javascript
+// Single notification
+const { data } = await supabase.rpc('mark_notification_read', {
+  notification_id_param: notificationId
+});
+
+// Mark all as read
+const { data } = await supabase.rpc('mark_all_notifications_read');
+```
+
+### Real-time Notifications
+
+```javascript
+// Listen for new notifications live
+supabase
+  .channel('notifications')
+  .on('postgres_changes', 
+    { event: 'INSERT', schema: 'public', table: 'notifications' },
+    (payload) => {
+      console.log('New notification:', payload.new);
+      // Show toast/popup
+    }
+  )
+  .subscribe();
+```
+
+---
+
+## 👨‍👩‍👧 PARENT FEATURES
+
+### Link Parent to Child (Admin)
+
+```javascript
+const { data } = await supabase.rpc('link_parent_to_child', {
+  parent_email: 'parent@email.com',
+  child_code: 'CHILD123'  // verification code
+});
+```
+
+### Get Parent Dashboard
+
+```javascript
+const { data } = await supabase.rpc('get_parent_dashboard');
+// Returns: [{ child_name, class_name, avg_grade, attendance_rate, pending_assignments, recent_grades }]
+```
+
+### Get Child's Performance
+
+```javascript
+const { data } = await supabase
+  .from('student_performance')
+  .select('*')
+  .eq('student_id', childId);
+```
+
+---
+
+## 📊 ANALYTICS & DASHBOARDS
+
+### Get School Dashboard Stats (Admin)
+
+```javascript
+const { data } = await supabase.rpc('get_school_dashboard_stats', {
+  school_id_param: schoolId
+});
+// Returns: { total_students, total_teachers, total_classes, avg_attendance, avg_grade, pending_assignments }
+```
+
+### Get Top Students
+
+```javascript
+const { data } = await supabase.rpc('get_top_students', {
+  class_id_param: classId,
+  limit_count: 10
+});
+```
+
+### Get Recent Activity
+
+```javascript
+const { data } = await supabase
+  .from('recent_activity')
+  .select('*')
+  .limit(20);
+```
+
+### Get Attendance Trends
+
+```javascript
+const { data } = await supabase
+  .from('attendance_trends')
+  .select('*')
+  .eq('class_id', classId)
+  .order('date', { ascending: false })
+  .limit(30);
+```
+
+### Get Grade Distribution
+
+```javascript
+const { data } = await supabase
+  .from('grade_distribution')
+  .select('*')
+  .eq('class_name', 'JSS 3A');
+```
+
+---
+
+## 👑 ADMIN FUNCTIONS
+
+### Get All Users (with pagination)
+
+```javascript
+const { data } = await supabase.rpc('admin_get_all_users', {
+  page: 1,
+  per_page: 20,
+  role_filter: 'teacher', // optional: null for all
+  search_term: 'john' // optional
+});
+```
+
+### Change User Role
+
+```javascript
+const { data } = await supabase.rpc('admin_change_user_role', {
+  target_email: 'teacher@school.com',
+  new_role: 'admin'
+});
+```
+
+### Ban User
+
+```javascript
+const { data } = await supabase.rpc('admin_ban_user', {
+  target_user_id: 'user-uuid-here',
+  ban_duration_days: 7,
+  ban_reason: 'Violation of rules'
+});
+```
+
+### Unban User
+
+```javascript
+const { data } = await supabase.rpc('admin_unban_user', {
+  target_user_id: 'user-uuid-here'
+});
+```
+
+### Delete User (Soft Delete)
+
+```javascript
+const { data } = await supabase.rpc('admin_delete_user', {
+  target_user_id: 'user-uuid-here'
+});
+```
+
+### Assign User to School
+
+```javascript
+const { data } = await supabase.rpc('admin_assign_school', {
+  target_email: 'user@email.com',
+  school_name: 'Lagos Premier Academy'
+});
+```
+
+### Transfer Student
+
+```javascript
+const { data } = await supabase.rpc('transfer_student', {
+  student_email: 'student@email.com',
+  from_class_code: 'JSS3A-001',
+  to_class_code: 'SS1SCI-001'
+});
+```
+
+### Soft Delete Class
+
+```javascript
+const { data } = await supabase.rpc('soft_delete_class', {
+  class_id_param: 'class-uuid-here'
+});
+```
+
+### Get Audit Logs
+
+```javascript
+const { data } = await supabase
+  .from('audit_report')
+  .select('*')
+  .limit(50);
+```
+
+### Get System Stats (Super Admin only)
+
+```javascript
+const { data } = await supabase.rpc('get_system_stats');
+```
+
+---
+
+## 🗄️ STORAGE (File Uploads)
+
+### Upload Lesson Material
+
+```javascript
+const file = event.target.files[0];
+const { data, error } = await supabase.storage
+  .from('lesson_materials')
+  .upload(`${classId}/${Date.now()}_${file.name}`, file);
+```
+
+### Upload Assignment Submission
+
+```javascript
+const file = event.target.files[0];
+const { data, error } = await supabase.storage
+  .from('assignment_submissions')
+  .upload(`${studentId}/${assignmentId}/${file.name}`, file);
+```
+
+### Get Public URL
+
+```javascript
+const { data } = supabase.storage
+  .from('lesson_materials')
+  .getPublicUrl('path/to/file.pdf');
+```
+
+### Delete File
+
+```javascript
+const { error } = await supabase.storage
+  .from('lesson_materials')
+  .remove(['path/to/file.pdf']);
+```
+
+---
+
+## 📋 COMPLETE FEATURE LIST FOR FRONTEND
+
+| Feature | API Method | Page |
+|---------|-----------|------|
+| Login/Signup | Auth | All |
+| Profile | profiles table | Profile page |
+| Dashboard | get_school_dashboard_stats | Admin dashboard |
+| Classes | classes table | Classes page |
+| Students | get_class_students | Class detail |
+| Assignments | assignments table | Assignments page |
+| Submissions | submissions table | Assignment detail |
+| Grading | grades table | Gradebook page |
+| Attendance | attendance table | Attendance page |
+| Materials | materials table | Materials page |
+| Announcements | announcements table | Announcements |
+| Notifications | notifications table | Bell icon |
+| Parent portal | get_parent_dashboard | Parent dashboard |
+| Analytics | get_top_students, get_attendance_chart_data | Charts |
+| Admin panel | admin_get_all_users, admin_ban_user | User management |
+
+---
+
+## 🚀 Supabase Client Setup
+
+```javascript
+// lib/supabase.js
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+```
